@@ -101,7 +101,7 @@ returns the elaspsed time from the input time */
 %mend TimeCheck;
 
 %macro CleanCons(workLib=,TableIn=,ConsIn=,OutCons=,OutTable=) /store;
-/*nettoye les contraintes associées avec les agrégats artificiels produits par */
+/*Clean up constraints produced by artificial aggregates*/
 	%local dsId vtype rc consIdnum renamecons;
 	%let dsId = %sysfunc(open(&TableIn));
 	%let vtype = %sysfunc(varnum(&dsId,type));
@@ -131,7 +131,7 @@ returns the elaspsed time from the input time */
 		quit;
 	%end;
 	%else %do;
-		/*éliminer les agrégats artificiels du tableau*/
+		/*Remove artificial aggregates from table*/
 		data &OutTable;
 			set &TableIn;
 			where Type ne 'A';
@@ -212,7 +212,7 @@ returns the elaspsed time from the input time */
 	run;
 
 
-	/*  on calcul les totaux pour toutes les combinaisons de variables  */
+	/*Calculate totals for all variables combinations */
 	proc means data=&worklib..Filtered sum noprint;
 	    class &ClassVarList;
 	    var &AnalysisVar;
@@ -273,7 +273,7 @@ returns the elaspsed time from the input time */
 			if eof then call symputx('ConsIdStart',consId);
 		run;
 
-		/*fusion des marges et des cellules qui s y aggrègent*/
+		/*Merge margins and the cells that add up to it*/
 		data &workLib..CurCons;
 			set &workLib..CurCons &workLib..MyMargin;
 		run;
@@ -321,8 +321,8 @@ returns the elaspsed time from the input time */
 %mend GetInOutCell; 
 
 %macro MakeAdjust(workLib=) /store;
-/*si l usager ne veut arrondir qu une partie des cellules alors on crée un fichier a cet effet.
-	Seule les cellules intérieures sont considérées*/
+/*If user wants to round only a part of the cells, then a file is created for that purpose.
+	Only interior cells are considered*/
 	%if (%upcase(&AdjustAll) = FALSE) %then %do; 
 		data &workLib..InCellAdjust;
 			set &workLib..InTable;
@@ -360,7 +360,7 @@ returns the elaspsed time from the input time */
 		%let i=0;
 		%let continue=1;
 		%do %while(&continue=1);
-			/*on obtient les identificateurs de contrainte des cellules courantes*/
+			/*Obtain current cell's constraints identifiers*/
 			proc sql;
 				 create table &workLib..ToConsId&i as
 				 select a.incell, b.consId
@@ -520,8 +520,8 @@ returns the elaspsed time from the input time */
 		rc= inCellMargin.find();
 		if (rc=0) then do;
 			
-			/*on obtient les marges associés et on accumule la distance pour ces marges, 
-			une distance qui correspond à un arrondissement vers le bas, l autre distance pour un arrondissement vers le haut*/
+			/*Obtain associated margins and accumulate the distance for those margins, 
+			one distance for down-rounding, another for up-rounding*/
 			outcell.find();
 
 			/*update margins*/
@@ -667,7 +667,7 @@ returns the elaspsed time from the input time */
 /*Performs sequential rounding */
 
 	/*%let sqStart = %time();*/
-	/*Si l arrondie ne doit etre fait que sur un sous ensemble*/
+	/*If rounding should be done on a subset*/
 	%if %upcase(&AdjustAll)=FALSE %then %do;
 		proc sort data=&workLib..InCellAdjust; by cellId;run;
 		proc sort data=&workLib..incell; by cellId;run;		
@@ -757,7 +757,7 @@ returns the elaspsed time from the input time */
 				distUp = 	sum(distUp, 	abs(_MarginTotal-_OriginalTotal+ (&base-lowres)));			
 			end;
 
-			/*Si la distance correspondant à un arrondissement vers le bas est plus faible, alors:*/	
+			/*If distance for down-rounding is lower then:*/	
 			if (distLow<distUp) then do;	
 			
 				/*update margins*/
@@ -865,7 +865,7 @@ returns the elaspsed time from the input time */
 				/*on identifie les marges qui y sont associées, il y en a au moins une*/
 				rc= inCellMargin.find();
 				if (rc=0 and rnd&var ne &var) then do;
-					/*on va chercher la valeur de cette marge*/
+					/*Fetch this margins value*/
 					outcell.find();
 					incellMargin.has_next(result: r);
 					if (rnd&var > &var) then do; 
@@ -894,7 +894,7 @@ returns the elaspsed time from the input time */
 						end;
 					end;
 
-					/*ainsi que la nouvelle distance obtenue si l on fait une modification*/
+					/*as well as the new distance resulting from the modification*/
 					_res= mod(_OriginalTotal,&base);
 					_newdist =  abs(_MarginTotal-_OriginalTotal  + _round);
 					_infoLossNew = _newDist;
@@ -917,7 +917,7 @@ returns the elaspsed time from the input time */
 					_OldInfoLoss = 	sum(_OldinfoLoss, 	_infoLossOld );
 					_NewInfoLoss = 	sum(_NewinfoLoss, 	_infoLossNew );
 
-					/*on fait la même chose pour toutes les autres marges associées à cette cellule intérieure*/
+					/*Do the same thing for all the margins associated to that interior cell*/
 					do while ( r ne 0 );
 						incellMargin.find_next();
 						incellMargin.has_next(result: r);
@@ -953,7 +953,7 @@ returns the elaspsed time from the input time */
 							end;
 						end;
 						
-						/*on accumule toutes ces distances*/
+						/*Accumulate all distances*/
 						OldDistMax =	max(OldDistMax, 	_dist);
 						OldDistSum =	sum(OldDistSum, 	_dist);
 						NewDistMax = 	max(NewDistMax, 	_newdist );
@@ -963,7 +963,7 @@ returns the elaspsed time from the input time */
 						_NewInfoLoss = 	sum(_NewinfoLoss, 	_infoLossNew );
 					end;
 
-					/*Si la nouvelle distance est meilleure que l ancienne, alors ça vaut la peine de faire un changement à cette cellule intérieure*/
+					/*If new distance is better that the old one, then it's worth performing the change to that interior cell*/
 					if (%if (&DistMax eq 1) %then %do; NewDistSum<=OldDistSum  /*and NewDistMax<=OldDistMax*/ %end; %else %do; _NewInfoLoss<=_OldInfoLoss %end;) then do; 
 						_improvement=1;	
 						_count=_count+1;
@@ -991,7 +991,7 @@ returns the elaspsed time from the input time */
 						end;
 						_prevCell=CellId;
 
-						/*mettre à jour les marges pour refléter ce changement*/
+						/*update margins to reflect that change*/
 						_MarginTotal= _MarginTotal + _round;
 						outcell.replace();	
 						incellMargin.has_prev(result: r);
@@ -1154,7 +1154,7 @@ returns the elaspsed time from the input time */
 	run;
 
 	/*Order variables*/
-	/*Calculate residials*/
+	/*Calculate residuals*/
 	proc sort data=&DataIn; by cellId;run;
 	proc sort data=&workLib..incell; by cellId;run;
 	data &workLib..InCell(drop= res upres);
@@ -1215,7 +1215,7 @@ returns the elaspsed time from the input time */
 				distUp = 	sum(distUp, 	abs(_MarginTotal-lowres + &base -_OriginalTotal));			
 			end;
 
-			/*Si la distance correspondant à un arrondissement vers le bas est plus faible, alors:*/	
+			/*If distance for down-rounding is lower then:*/	
 			if (distLow<distUp) then do;	
 			
 				/*Update margins*/
@@ -1283,7 +1283,7 @@ returns the elaspsed time from the input time */
 		
 	%let Ncell=%Nobs(&workLib..Incell);
 
-	/*Table arrondie à la base la plus près*/
+	/*Table rounded to the closest base*/
 	data &workLib..RoundTable;
 		set &DataIn end=eof;
 		lowres	= mod(&var,&base);
@@ -1403,7 +1403,7 @@ returns the elaspsed time from the input time */
 	%put %str(  ) Problem Summary;
 
 
-	/*Si un fichier de proc freq est fourni, alors il faut créer le fichier des contraintes*/
+	/*If an input from proc freq is provided then the constraints file must be created*/
 	%BuildCons(workLib=RoundWrk, dataIn=&CellIn, ClassVarList=&by , AnalysisVar=&var, ConsOut=RoundWrk.InCons,Tableout=RoundWrk.InTable);
 			
 	data &ConsOut;
@@ -1580,7 +1580,7 @@ returns the elaspsed time from the input time */
 	%end;
 	%else %if (&by ne  ) %then
 	%do;
-		/*Si un fichier de proc freq est fourni, alors il faut créer le fichier des contraintes*/
+		/*If an input from proc freq is provided then the constraints file must be created*/
 		%BuildCons(workLib=RoundWrk, dataIn=&CellIn, ClassVarList=&by , AnalysisVar=&var, ConsOut=RoundWrk.InCons,Tableout=RoundWrk.InTable);
 		%if &ReMargins eq 1 %then %do;
 			%put %str(   )ERROR: No margins are allowed in the input file;
@@ -1593,7 +1593,7 @@ returns the elaspsed time from the input time */
 	%put %str(  ) Problem Summary;
 	/*Split interior cells from margins*/
 	%GetInOutCell(workLib=RoundWrk,cellIn=RoundWrk.InTable,consIn=RoundWrk.InCons);
-	/*Si l usager ne veut ajuster qu un sous ensemble de cellules, alors on place cette information dans un fichier */
+	/*If user wants to adjust a subset of cells, this information is saved in a file */
 	%MakeAdjust(workLib=RoundWrk);
 	/*On crée un fichier qui associe chaque cellule intérieure à toutes les marges qui seront affectées par un changement à cette cellule*/
 	%MakeIncellMargins(workLib=RoundWrk,consIn=RoundWrk.InCons);
@@ -1640,7 +1640,7 @@ returns the elaspsed time from the input time */
 			set &dataOut;
 			if rnd&var=. then rnd&var=&var;
 		run;
-		/*Calcule de la distance*/
+		/*Calculate distance*/
 		%GetDistance(workLib=RoundWrk, dataIn=&dataOut ,dist=TotalDistance);
 		%GetInfoLoss(workLib=RoundWrk, dataIn=&dataOut ,dist=TotalInfoLoss);
 		data _null_;
@@ -1658,7 +1658,7 @@ returns the elaspsed time from the input time */
 		%UpdateInput(workLib=RoundWrk, dataOut=&dataOut);
 		%ITARound(workLib=RoundWrk, Base=&Base, distance=&totalDistance, infoLoss=&totalInfoLoss);
 		%UpdateOutput(workLib=RoundWrk, dataIn=&dataOut, dataOut=&dataOut);
-		/*Calcule de la distance*/
+		/*Calculate distance*/
 		%GetDistance(workLib=RoundWrk, dataIn=&dataOut ,dist=TotalDistance);
 		%GetInfoLoss(workLib=RoundWrk, dataIn=&dataOut ,dist=TotalInfoLoss);
 		data _null_;
@@ -1666,7 +1666,7 @@ returns the elaspsed time from the input time */
 		run;
 	%end;
 	%if (&TotalDistance gt 0 and ((&MultiStart eq ) or (&MultiStart gt 1 ))  and ((&MaxTime eq ) or (%TimeCheck())) ) %then %do;
-		/*Si la solution n est pas contrôlée et que le nombre d itération permise est plus grande que 0, alors on procède à l ajustement itératif*/
+		/*If solution is not controlled and the number of iterations allowed is greater than 0 then procede to iterative adjustment*/
 		%MultiRound(workLib=RoundWrk, Base=&Base,  dataOut=&DataOut);
 		
 	%end;
