@@ -2,7 +2,7 @@
 
 
 /*Load the macro in memory*/
-LIBNAME CtrlRnd "F:\\CtrlRound" ; /* insère le chemin ou se trouve ton fichier sasmacr.sas7bcat */
+LIBNAME CtrlRnd "F:\\CtrlRound" ; /* insÃ¨re le chemin ou se trouve ton fichier sasmacr.sas7bcat */
 OPTIONS MSTORED SASMSTORE = CtrlRnd ;
 
 /*create some input files*/
@@ -38,7 +38,7 @@ run;
 
 
 
-/*ou bien en utilisant les contraintes*/
+/*or using constraints*/
 %TableCons(
 			CellIn= myfreq, 
 			by= var1 var2 var3,  
