@@ -4,7 +4,7 @@ Performs controlled rounding of a table. The result will be rounded, additive, a
 
 ## Syntax
 
-'''sas
+```SAS
 %CtrlRound(	
 	CellIn=, 
 	ConsIn=, 
@@ -20,9 +20,10 @@ Performs controlled rounding of a table. The result will be rounded, additive, a
 	Solve=,
 	DataOut=
 );
-'''
-Parameters
-Input
+```
+
+## Parameters
+### Input
 Cell In (file) Required File
 Contains the initial table.
 CellId, Var= , < By= > , <Adjust>
@@ -62,15 +63,15 @@ Name of the variable containing the adjustment indicator.
 LPSolve (LP|MILP)
 Determines the use of the LP solver.
 
-Output
+### Output
 DataOut (file) Required File
 Contains the current solution.
 CellId, Var= , Rnd(Var=) , < By= > , < Adjust= >
 
-Macro TableCons
+# Macro TableCons
 Builds a file of linear constraints corresponding to the structure defined by classification variables.
 
-
+```SAS
 %TableCons(
 	CellIn=, 
 	by=, 
@@ -78,8 +79,10 @@ Builds a file of linear constraints corresponding to the structure defined by cl
 	ConsOut=, 
 	DataOut=
 );
-Parameters
-Input
+```
+
+## Parameters
+### Input
 Cell (file) Required File
 Contains the initial table.
 CellId, Var= , < By= > , <Adjust>
@@ -90,7 +93,7 @@ List of names of classification variables.
 Var (String) Required Parameter
 Name of the target variable.
 
-Output
+### Output
 DataOut (file)
 Contains the current solution.
 CellId, Var= , Rnd(Var=) , < By= > , < Adjust= >
