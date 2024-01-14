@@ -1,7 +1,7 @@
 
-/*-----------------------------------------------*/
-/*  fichier de contraintes linéaire d un tableau */		
-/*-----------------------------------------------*/
+/*----------------------------------*/
+/*  Table's linear constraints file */		
+/*----------------------------------*/
 
 %macro Nobs(dataIn) ;
 /*Returns the number of observations in a dataset*/
@@ -64,7 +64,7 @@ returns the elaspsed time from the input time */
 %mend Exist;
 
 %macro BuildCons(workLib=, DataIn=, ClassVarList=, AnalysisVar=, ConsOut=, TableOut=) ;
-/*Cette macro crée le fichier de constraintes. Elle est utilisée lorsque l utilisateur fourni un input de proc freq*/
+/*Creates constraints file. Used when a user provides an input from proc freq*/
 /*Output: &ConsOut*/
 
 	%local i k Dimensions aggregated;
@@ -80,7 +80,7 @@ returns the elaspsed time from the input time */
 	%end;
 	%let Dimensions = %eval(&i-1);
 
-	/*test si l entrée est */
+	/*test si l entrÃ©e est */
 	%let aggregated=0;
 	data _null_;
 		set &DataIn;
@@ -95,7 +95,7 @@ returns the elaspsed time from the input time */
 
 	%if &aggregated eq 0 %then %do;
 
-		/*  on calcul les totaux pour toutes les combinaisons de variables  */
+		/*Calculate totals for all variables combinations*/
 		proc means data=&DataIn sum noprint;
 		    class &ClassVarList;
 		    var &AnalysisVar;
@@ -122,12 +122,12 @@ returns the elaspsed time from the input time */
 		&var=&analysisVar;
 	run;
 
-	/*création du fichier des contraintes*/
+	/*Constraints file creation*/
 	%let NCell= %Nobs(&workLib..FreqTable);
 	%let consIdStart=0;
 	%do i = 1 %to &Dimensions;
 		
-		/*fichier qui associe une marge avec les cellules à laquelle elles s aggrègent*/
+		/*fichier qui associe une marge avec les cellules Ã  laquelle elles s aggrÃ¨gent*/
 		proc sql;
 			create table &workLib..CurCons as
 			select a.cellId as margin , b.CellId as cellId
@@ -142,9 +142,9 @@ returns the elaspsed time from the input time */
 
 		proc sort data= &workLib..CurCons; by margin;run;
 
-		/*ajout d un identificateur de contraintes.
-		Un enregistrement par contrainte est créé dans lequel on place la marge de cette contrainte.
-		Un fichier contient les marges un autre contient les cellules qui s aggrègent à cette marge*/
+		/*Add a constraints identifier
+		Un enregistrement par contrainte est crÃ©Ã© dans lequel on place la marge de cette contrainte.
+		Un fichier contient les marges un autre contient les cellules qui s aggrÃ¨gent Ã  cette marge*/
 		data &workLib..CurCons(drop=margin) &workLib..MyMargin(drop=margin);
 			length Coefficient 3;
 			retain consId  &ConsIdStart;
@@ -165,7 +165,7 @@ returns the elaspsed time from the input time */
 			if eof then call symputx('ConsIdStart',consId);
 		run;
 
-		/*fusion des marges et des cellules qui s y aggrègent*/
+		/*merge margins and the cells that add up to it*/
 		data &workLib..CurCons;
 			set &workLib..CurCons &workLib..MyMargin;
 		run;
@@ -191,9 +191,9 @@ returns the elaspsed time from the input time */
 %mend BuildCons;
 
 %macro GetInOutCell(workLib=,CellIn=,ConsIn=) ;
-/*Sépare les cellules intérieures des marges */
+/*Split interior cells from margins */
 
-	/*les marges sont faciles à identifier*/
+	/*margins are easy to identify*/
 	proc sql;
 		create table &workLib..OutCell as
 		select distinct CellID
@@ -201,7 +201,7 @@ returns the elaspsed time from the input time */
 		where coefficient=-1;
 	quit;
 
-	/*les cellules intérieures sont celles qui ne sont pas des marges!*/
+	/*interior cells are those that are not margins*/
 	proc sort data= &CellIn; 			by cellId;run;
 	proc sort data= &workLib..OutCell; 	by cellId;run;
 	data &workLib..InCell;
@@ -261,7 +261,7 @@ returns the elaspsed time from the input time */
 	%put %str(  ) Problem Summary;
 
 
-	/*Si un fichier de proc freq est fourni, alors il faut créer le fichier des contraintes*/
+	/*If an input from proc feq is provided then the constraints file has to be created*/
 	%BuildCons(workLib=RoundWrk, dataIn=&CellIn, ClassVarList=&by , AnalysisVar=&var, ConsOut=RoundWrk.InCons,Tableout=RoundWrk.InTable);
 			
 	data &ConsOut;
@@ -276,7 +276,7 @@ returns the elaspsed time from the input time */
 		set &ConsOut (where= (Coefficient=-1));
 	run;
 	
-	/*Sépare les cellules intérieures des marges*/
+	/*Split interior cells from margins*/
 	%GetInOutCell(workLib=RoundWrk,cellIn=RoundWrk.InTable,consIn=RoundWrk.InCons);
 
 	/*log  message*/
@@ -286,7 +286,7 @@ returns the elaspsed time from the input time */
 	%put %str(      ) Number of Constraints: %Nobs(RoundWrk.NCons);
 	%put;
 	
-	/*récupérer les variables de classification*/
+	/*retreive classification variables*/
 	proc sort data=RoundWrk.FreqTable; by cellID;run;	
 	proc sort data=&dataOut; by cellID;run;
 	data &dataOut;
@@ -313,7 +313,7 @@ returns the elaspsed time from the input time */
 	%put;
 %mend TableCons;
 
-/*                Exemple               */
+/*                Example               */
 /*create some input files*/
 data Population;
 	do i = 1 to 10000;
